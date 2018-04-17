@@ -1,0 +1,168 @@
+﻿<Window x:Class="flickr_uploader_mvvm.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:flickr_uploader_mvvm"
+        xmlns:ViewModel="clr-namespace:flickr_uploader_mvvm.ViewModel"
+        xmlns:ValueConverters="clr-namespace:flickr_uploader_mvvm.ValueConverters"
+        mc:Ignorable="d"
+        Title="Yet Another Flickr Uploader" 
+        Height="{Binding SystemParameters.PrimaryScreenHeight}" 
+        Width="{Binding SystemParameters.PrimaryScreenWidth}"
+        >
+    <Window.Resources>
+        <ValueConverters:UploadStatusToString x:Key="UploadStatusToString"/>
+        <ValueConverters:FileSizeConverterToString x:Key="FileSizeConverterToString"/>
+        <ValueConverters:BoolToVisibility x:Key="BoolToVisibility"/>
+        <ValueConverters:UserLoggedToButtonText x:Key="UserLoggedToButtonText"/>
+        <ValueConverters:UserLoggedToTextColor x:Key="UserLoggedToTextColor"/>
+        <ValueConverters:BoolInversion x:Key="BoolInversion"/>
+    </Window.Resources>
+    <Window.DataContext>
+        <ViewModel:MainViewModel/>
+    </Window.DataContext>
+
+    <DockPanel LastChildFill="True">
+
+        <Grid DockPanel.Dock="Top">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Margin="5,5,10,5" HorizontalAlignment="Right" VerticalAlignment="Center">Signed in as::</TextBlock>
+                <TextBlock Margin="10,5,10,5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Text="{Binding CurrentUser.username._content}" Foreground="{Binding IsUserLogged, Converter={StaticResource UserLoggedToTextColor}}"></TextBlock>
+                <Button Margin="100,5,10,5" MinWidth="100" Content="{Binding IsUserLogged, Converter={StaticResource UserLoggedToButtonText}}" Command="{Binding CmdLoginLogout}" ></Button>
+                <TextBlock Margin="10,5,10,5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Visibility="{Binding IsPinControlVisible, Converter={StaticResource BoolToVisibility}}" >Enter Pin::</TextBlock>
+                <TextBox Margin="10,5,10,5" HorizontalAlignment="Stretch" VerticalAlignment="Center" MinWidth="120" MaxWidth="120" Text="{Binding Pin}" Visibility="{Binding IsPinControlVisible, Converter={StaticResource BoolToVisibility}}"></TextBox>
+                <Button Margin="10,5,10,5" HorizontalAlignment="Stretch" VerticalAlignment="Center" MinWidth="100" Command="{Binding CmdPinInput}"  Visibility="{Binding IsPinControlVisible, Converter={StaticResource BoolToVisibility}}">Confirm Pin</Button>
+            </StackPanel>
+        </Grid>
+
+
+        <Grid DockPanel.Dock="Top" IsEnabled="{Binding IsUserLogged}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <Button Margin="5" MinWidth="120" IsEnabled="{Binding IsUploadInProgress, Converter={StaticResource BoolInversion}}" Click="BrowseButton_Click">Browse folder</Button>
+                    <TextBlock Margin="10,5,10,5" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding FolderPath}"></TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1">
+                    <GroupBox Header="Select Album" Margin="5" >
+                        <StackPanel Margin="5">
+
+                            <RadioButton Margin="5" GroupName="AlbumGroup" IsChecked="{Binding IsCreateAlbum, Mode=TwoWay}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Margin="5,0,5,0" MinWidth="120" IsEnabled="{Binding IsCreateAlbum}">Create New Album</TextBlock>
+                                    <TextBox Margin="5,0,5,0" MinWidth="250" Text="{Binding NewAlbumName}" IsEnabled="{Binding IsCreateAlbum}"></TextBox>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Margin="5" GroupName="AlbumGroup" IsChecked="{Binding IsExistingAlbum, Mode=TwoWay}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Margin="5,0,5,0" MinWidth="120" IsEnabled="{Binding IsExistingAlbum}">Choose existing album</TextBlock>
+                                    <ComboBox Margin="5,0,5,0" MinWidth="250" SelectedIndex="{Binding AlbumsSelectedIndex}" ItemsSource="{Binding Albums}" DisplayMemberPath="title._content" IsEnabled="{Binding IsExistingAlbum}"/>
+                                    <Button Margin="20,0,5,0" MinWidth="120" Command="{Binding CmdRefreshAlbumList}" IsEnabled="{Binding IsExistingAlbum}">Refresh</Button>
+                                </StackPanel>
+                            </RadioButton>
+
+                        </StackPanel>
+
+                    </GroupBox>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+
+        <Grid DockPanel.Dock="Bottom" Margin="10" IsEnabled="{Binding IsUserLogged}">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="5" >
+                    <Grid Margin="5" >
+                        <ProgressBar MinHeight="20" MinWidth="260" Minimum="0" Maximum="{Binding UploadList.Count}" Value="{Binding TotalFilesUploaded}" Name="pbStatus" Visibility="{Binding IsUploadInProgress, Converter={StaticResource BoolToVisibility}}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <!--<TextBlock Margin="5,0,5,0" Text="{Binding ElementName=pbStatus, Path=Value, StringFormat={}{0:0}%}" HorizontalAlignment="Center" VerticalAlignment="Center" />-->
+                            <TextBlock Margin="100,0,5,0" VerticalAlignment="Center" Text="{Binding TotalFilesUploaded}" Visibility="{Binding IsUploadInProgress, Converter={StaticResource BoolToVisibility}}"></TextBlock>
+                            <TextBlock Margin="0,0,0,0" VerticalAlignment="Center" Visibility="{Binding IsUploadInProgress, Converter={StaticResource BoolToVisibility}}">of</TextBlock>
+                            <TextBlock Margin="5,0,5,0" VerticalAlignment="Center" Text="{Binding UploadList.Count}" Visibility="{Binding IsUploadInProgress, Converter={StaticResource BoolToVisibility}}"></TextBlock>
+                        </StackPanel>
+
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="5" Orientation="Horizontal" HorizontalAlignment="Right" >
+                    <Button Margin="5" MinWidth="120" Command="{Binding CmdRetryAlbumList}" IsEnabled="{Binding EnableRetry}">Retry</Button>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="2" Margin="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Margin="5" MinWidth="120" Command="{Binding CmdUploadAlbumList}" IsEnabled="{Binding EnableUpload}">Upload</Button>
+                </StackPanel>
+
+
+            </Grid>
+        </Grid>
+
+
+        <Grid IsEnabled="{Binding IsUserLogged}">
+            <GroupBox Margin="5" Header="Photos">
+                <Grid>
+
+                    <DataGrid  Grid.Row="0" Grid.ColumnSpan="2" x:Name="ResultDataGrid" Margin="5" 
+                              SelectionMode="Extended" SelectionUnit="FullRow" 
+                          IsReadOnly="True" AlternatingRowBackground="Gainsboro"  AlternationCount="1" 
+                          ItemsSource="{Binding UploadList}" AutoGenerateColumns="False" >
+
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="ToolTip" Value="{Binding FileDetail.FullName}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="File Name" MinWidth="180" Width="Auto" Binding="{Binding FileDetail.Name}"/>
+
+                            <DataGridTextColumn Header="Size" MinWidth="60" Width="Auto" Binding="{Binding FileDetail.Length, Converter={StaticResource FileSizeConverterToString}}"/>
+
+                            <DataGridTextColumn  Header="Status"  Width="Auto" Binding="{Binding Status, Converter={StaticResource UploadStatusToString}}">
+                                <DataGridTextColumn.CellStyle>
+                                    <Style>                                        
+                                        <Setter Property="TextBlock.TextAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.CellStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Flickr Photo ID" MinWidth="80" Width="Auto" Binding="{Binding PhotoID}"/>
+
+                            <DataGridTextColumn Header="Result" MinWidth="120" Width="Auto" Binding="{Binding Result}"/>
+                            
+                            
+
+
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+
+
+    </DockPanel>
+
+</Window>
